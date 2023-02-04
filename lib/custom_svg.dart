@@ -24,7 +24,7 @@ class _CustomSvgState extends State<CustomSvg> {
   Future<void> getSvg() async {
     var str = await File(widget.fileUrl).readAsString();
     // final document = XmlDocument.parse(str);
-    // print(document.toString());
+    debugPrint(str);
     // document.children.initialize(parent, nodeTypes);
     // document.children.forEach((element) {
     //   if (element.nodeType == XmlNodeType.ELEMENT &&
