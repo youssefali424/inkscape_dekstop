@@ -75,17 +75,25 @@ Future<String?> processFile(String? path, String name, String output) async {
 }
 
 List<String> getArgs(String? path, String name, {String? output}) {
-  output ??= getOutput(path, name);
+  output = output == null
+      ? getOutput(path, name)
+      : Platform.isWindows
+          ? output.replaceAll('/', slash)
+          : output;
+
   return [
-    '--actions=select-all;selection-ungroup;fit-canvas-to-selection;object-stroke-to-path;path-combine;select-all;fit-canvas-to-selection;vacuum-defs;export-filename:$output;export-overwrite;export-plain-svg;export-do',
+    '--actions=select-all;selection-ungroup;fit-canvas-to-selection;object-stroke-to-path;path-combine;select-all;object-release-clip; fit-canvas-to-selection;vacuum-defs;export-filename:$output;export-overwrite;export-plain-svg;export-do',
     '$path'
   ];
+  // return [
+  //   '--actions=select-all;fit-canvas-to-selection;select-all;fit-canvas-to-selection;vacuum-defs;export-filename:$output;export-overwrite;export-plain-svg;export-do',
+  //   '$path'
+  // ];
 }
-
 String getOutput(String? path, String name) {
   var currentMillis = DateTime.now().millisecondsSinceEpoch;
-  return path?.replaceAll(name, "out/${currentMillis}_$name") ??
-      "out/${currentMillis}_$name";
+  return path?.replaceAll(name, "out$slash${currentMillis}_$name") ??
+      "out$slash${currentMillis}_$name";
 }
 
 class IsolateResult {

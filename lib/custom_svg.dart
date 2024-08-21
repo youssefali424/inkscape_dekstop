@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:xml/xml.dart';
 
 class CustomSvg extends StatefulWidget {
   final String fileUrl;
@@ -13,8 +12,7 @@ class CustomSvg extends StatefulWidget {
 }
 
 class _CustomSvgState extends State<CustomSvg> {
-  DrawableRoot? svgRoot;
-
+  PictureInfo? pictureInfo;
   @override
   void initState() {
     super.initState();
@@ -22,9 +20,9 @@ class _CustomSvgState extends State<CustomSvg> {
   }
 
   Future<void> getSvg() async {
-    var str = await File(widget.fileUrl).readAsString();
+    // var str = await File(widget.fileUrl).readAsString();
     // final document = XmlDocument.parse(str);
-    debugPrint(str);
+    // debugPrint(str);
     // document.children.initialize(parent, nodeTypes);
     // document.children.forEach((element) {
     //   if (element.nodeType == XmlNodeType.ELEMENT &&
@@ -44,19 +42,31 @@ class _CustomSvgState extends State<CustomSvg> {
     //     // element.setAttribute(name, value)
     //   });
     // }
-    svg.fromSvgString(str, widget.fileUrl).then((svgd) {
-      var temp = svgd.mergeStyle(const DrawableStyle(
-          pathFillType: PathFillType.nonZero,
-          fill: DrawablePaint(
-            PaintingStyle.fill,
-            color: Colors.black,
-          )));
-      if (mounted) {
-        setState(() {
-          svgRoot = temp;
-        });
-      }
-    }).catchError(print);
+    // SvgStringLoader
+    // var parsed = parse(str, key: widget.fileUrl);
+    // parsed.toString();
+
+    //     pictureInfo.picture.;
+    // svg.fromSvgString(str, widget.fileUrl).then((svgd) {
+    //   var temp = svgd.mergeStyle(const DrawableStyle(
+    //       pathFillType: PathFillType.nonZero,
+    //       fill: DrawablePaint(
+    //         PaintingStyle.fill,
+    //         color: Colors.black,
+    //       )));
+
+    final PictureInfo pictureInfo = await vg.loadPicture(
+      SvgFileLoader(File(widget.fileUrl),
+          colorMapper: const CustomColorMapper()),
+      null,
+    );
+    if (mounted) {
+      setState(() {
+        this.pictureInfo = pictureInfo;
+      });
+    }
+    //   }
+    // }).catchError(print);
   }
 
   @override
@@ -69,28 +79,47 @@ class _CustomSvgState extends State<CustomSvg> {
 
   @override
   Widget build(BuildContext context) {
-    if (svgRoot == null) {
+    if (pictureInfo == null) {
       return const Center(child: CircularProgressIndicator());
     }
     return CustomPaint(
-      painter: _CustomSvgPainter(svgRoot!),
+      painter: _CustomSvgPainter(pictureInfo!),
     );
   }
 }
 
 class _CustomSvgPainter extends CustomPainter {
-  DrawableRoot svgRoot;
-  _CustomSvgPainter(this.svgRoot);
+  PictureInfo pictureInfo;
+  _CustomSvgPainter(this.pictureInfo);
 
   @override
   void paint(Canvas canvas, Size size) {
-    svgRoot.scaleCanvasToViewBox(canvas, size);
+    // svgRoot.scaleCanvasToViewBox(canvas, size);
+    canvas.scale(size.width / pictureInfo.size.width,
+        size.height / pictureInfo.size.height);
+    canvas.drawPicture(pictureInfo.picture);
+    // canvas.drawImage(
+    //     pictureInfo.picture
+    //         .toImageSync(size.width.floor(), size.height.floor()),
+    //     Offset.zero,
+    //     Paint());
+    // pictureInfo.size.width;
 
-    svgRoot.draw(canvas, Rect.fromLTRB(0, 0, size.width, size.height));
+    // svgRoot.draw(canvas, Rect=C.fromLTRB(0, 0, size.width, size.height));
   }
 
   @override
   bool shouldRepaint(_CustomSvgPainter oldDelegate) {
-    return svgRoot != (oldDelegate).svgRoot;
+    return pictureInfo != oldDelegate.pictureInfo;
+  }
+}
+
+class CustomColorMapper extends ColorMapper {
+  const CustomColorMapper();
+
+  @override
+  Color substitute(
+      String? id, String elementName, String attributeName, Color color) {
+    return Colors.black;
   }
 }

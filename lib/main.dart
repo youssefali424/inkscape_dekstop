@@ -205,14 +205,35 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  final allowedExtensions = ['svg', 'SVG', 'png', 'PNG'];
+
+  List<PlatformFile> getFilesInDirectoryAndSub(String directoryPath) {
+    var directory = Directory(directoryPath);
+    var files = directory.listSync(recursive: true);
+    return files
+        .where((element) =>
+            element is File &&
+            allowedExtensions.any(
+                (e) => element.path.toLowerCase().endsWith(e.toLowerCase())))
+        .map((e) => (e as File).toPlatformFile())
+        .toList();
+  }
+
   pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
-      allowedExtensions: ['svg', 'SVG', 'png', 'PNG'],
-      type: FileType.custom,
+      allowedExtensions: allowedExtensions,
+      type: FileType.any,
       allowMultiple: true,
     );
+    // String? result = await FilePicker.platform.getDirectoryPath(
+    //     // allowedExtensions: ['svg', 'SVG', 'png', 'PNG'],
+    //     // type: FileType.any,
+    //     // allowMultiple: true,
+    //     );
+
     if (result != null) {
       setState(() {
+        // _paths = getFilesInDirectoryAndSub(result);
         _paths = result.files;
         _processedFiles = {};
       });
@@ -224,9 +245,11 @@ class _MyHomePageState extends State<MyHomePage> {
     var directory = await getTemporaryDirectory();
     var slices = _paths.slices(10).toList();
     var i = 0;
+    var tempDir = "${directory.path}${slash}inkscape";
+    Directory(tempDir).createSync(recursive: true);
     for (var slice in slices) {
       var stream = await processInBackground(slice,
-          "${directory.path}/inkscape/${DateTime.now().millisecondsSinceEpoch}_");
+          "$tempDir$slash${DateTime.now().millisecondsSinceEpoch}_");
       await for (var entry in stream) {
         if (entry.path != null) {
           setState(() {
@@ -274,16 +297,28 @@ class _MyHomePageState extends State<MyHomePage> {
       await SvgToFont().run(from: tempDirPath, paths: paths, out: output);
     } catch (e) {
       debugPrint("Failed to convert to font: $e");
-      showDialog(
-          context: context,
-          builder: (context) => const AlertDialog(
-                title: Text('Failed'),
-                content: Text("Failed to convert to font try again"),
-              ));
+      if (mounted)
+        showDialog(
+            context: context,
+            builder: (context) => const AlertDialog(
+                  title: Text('Failed'),
+                  content: Text("Failed to convert to font try again"),
+                ));
     }
     setState(() {
       loadingFonts = false;
     });
     Directory(tempDirPath).delete(recursive: true);
+  }
+}
+
+extension FileToPlatformFile on File {
+  PlatformFile toPlatformFile() {
+    return PlatformFile(
+      name: path.basename(this.path),
+      path: this.path,
+      size: lengthSync(),
+      bytes: readAsBytesSync(),
+    );
   }
 }

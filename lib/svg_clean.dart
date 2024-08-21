@@ -3,7 +3,15 @@ import 'dart:math';
 import 'package:svgpath/svgpath.dart';
 import 'package:xml/xml.dart';
 
-var namespacePrefixes = ['dc', 'rdf', 'sodipodi', 'cc', 'inkscape', 'defs'];
+var namespacePrefixes = [
+  'dc',
+  'rdf',
+  'sodipodi',
+  'cc',
+  'inkscape',
+  'style'
+]; //'defs'
+var attrPrefixes = ['style'];
 
 class SvgCleaner {
   String clean(String svgString, {bool prepareForFontello = false}) {
@@ -15,9 +23,15 @@ class SvgCleaner {
           .contains(element.name.prefix ?? element.name.local)) {
         return true;
       }
+      element.attributes.removeWhere((attribute) {
+        if (namespacePrefixes.contains(attribute.name.prefix)) {
+          return true;
+        }
+        return false;
+      });
       return element.attributes.isEmpty &&
           element.children.isEmpty &&
-          !element.text.trim().isNotEmpty;
+          !(element.value?.trim() ?? "").isNotEmpty;
     }).toList();
 
     for (var element in unusedElements) {
